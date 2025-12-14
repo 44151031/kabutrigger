@@ -130,29 +130,33 @@ create extension if not exists pg_net;
 
 ### 2. Supabase Edge Functionのデプロイ
 
+**推奨: `fetch-rss` 関数を使用**
+
 Supabase CLIを使用してEdge Functionをデプロイ：
 
 ```bash
 # Supabase CLIがインストールされている場合
-supabase functions deploy fetch-feeds
+supabase functions deploy fetch-rss
 ```
 
 または、Supabase Dashboard > Edge Functions から手動で作成：
-- 関数名: `fetch-feeds`
-- コード: `supabase/functions/fetch-feeds/index.ts` の内容をコピー
+- 関数名: `fetch-rss`
+- コード: `supabase/functions/fetch-rss/index.ts` の内容をコピー
+
+**注意:** `fetch-feeds` 関数も互換性のため保持されていますが、新規セットアップでは `fetch-rss` を使用してください。
 
 ### 3. Cronジョブの登録
 
-`scripts/register_cron_job.sql` を開き、`<your-project-ref>` を実際のSupabaseプロジェクトIDに置き換えてから、Supabase SQL Editorで実行：
+`scripts/register_fetch_rss_scheduler.sql` を開き、`<your-project-ref>` を実際のSupabaseプロジェクトIDに置き換えてから、Supabase SQL Editorで実行：
 
 ```sql
-select
+SELECT
   cron.schedule(
-    'kabutrigger-hourly',
-    '0 * * * *',  -- 毎時0分に実行
+    'fetch-rss-hourly',
+    '0 * * * *',  -- 毎時0分に実行（UTC基準）
     $$
-    select net.http_post(
-      url:='https://<your-project-ref>.supabase.co/functions/v1/fetch-feeds',
+    SELECT net.http_post(
+      url:='https://<your-project-ref>.supabase.co/functions/v1/fetch-rss',
       headers:='{"Authorization":"Bearer ' || current_setting('app.settings.service_role_key', true) || '"}'
     )
     $$
@@ -162,15 +166,21 @@ select
 **プロジェクトIDの確認方法**: Supabase Dashboard > Settings > API > Project URL
 - 例: `https://abcd1234.supabase.co` → プロジェクトIDは `abcd1234`
 
+**注意:** SupabaseはUTC基準で実行するため、JSTでは毎時9分のズレが生じます。JSTで毎時0分に実行したい場合は、`schedule` を `'9 * * * *'` に変更してください。
+
 ### 4. ジョブの確認
 
 ```sql
 -- 登録されたジョブを確認
-select * from cron.job;
+SELECT * FROM cron.job WHERE jobname = 'fetch-rss-hourly';
 
--- ジョブの削除（必要に応じて）
--- select cron.unschedule('kabutrigger-hourly');
+-- 実行履歴を確認
+SELECT * FROM cron.job_run_details 
+WHERE jobid IN (SELECT jobid FROM cron.job WHERE jobname = 'fetch-rss-hourly')
+ORDER BY start_time DESC LIMIT 10;
 ```
+
+詳細な確認手順は `docs/SCHEDULER_SETUP.md` を参照してください。
 
 ### 手動実行
 
