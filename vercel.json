@@ -1,9 +1,5 @@
 {
-  "crons": [
-    {
-      "path": "/api/cron/fetch-rss",
-      "schedule": "0 * * * *"
-    }
-  ]
+  "buildCommand": "next build",
+  "outputDirectory": ".vercel/output"
 }
 

@@ -37,9 +37,15 @@ kabutrigger/
 │   │   └── supabaseClient.ts    # Supabaseクライアント
 │   └── types/news.ts             # 型定義
 ├── scripts/
-│   └── fetchRss.ts              # RSS自動収集スクリプト
+│   ├── fetchRss.ts              # RSS自動収集スクリプト
+│   └── register_cron_job.sql   # Supabase Cronジョブ登録SQL
 └── supabase/
-    └── schema.sql                # テーブル作成SQL
+    ├── schema.sql                # テーブル作成SQL
+    ├── migrations/
+    │   └── enable_pg_cron.sql   # pg_cron拡張有効化SQL
+    └── functions/
+        └── fetch-feeds/
+            └── index.ts          # Supabase Edge Function
 ```
 
 ## 🚀 セットアップ手順
@@ -108,26 +114,71 @@ npm run dev
 | label | text | 表示ラベル |
 | priority | integer | 優先度 |
 
-## 🔄 定期実行の設定
+## 🔄 定期実行の設定（Supabaseスケジューラ）
 
-### Vercel Cron Jobs
+本プロジェクトはSupabaseのpg_cronを使用してRSS取得を定期実行します。
 
-`vercel.json` を作成：
+### 1. pg_cron拡張の有効化
 
-```json
-{
-  "crons": [
-    {
-      "path": "/api/cron/fetch-rss",
-      "schedule": "0 * * * *"
-    }
-  ]
-}
+Supabase SQL Editorで以下を実行：
+
+```sql
+-- supabase/migrations/enable_pg_cron.sql の内容を実行
+create extension if not exists pg_cron;
+create extension if not exists pg_net;
 ```
 
-### GitHub Actions
+### 2. Supabase Edge Functionのデプロイ
 
-`.github/workflows/fetch-rss.yml` を作成して毎時実行。
+Supabase CLIを使用してEdge Functionをデプロイ：
+
+```bash
+# Supabase CLIがインストールされている場合
+supabase functions deploy fetch-feeds
+```
+
+または、Supabase Dashboard > Edge Functions から手動で作成：
+- 関数名: `fetch-feeds`
+- コード: `supabase/functions/fetch-feeds/index.ts` の内容をコピー
+
+### 3. Cronジョブの登録
+
+`scripts/register_cron_job.sql` を開き、`<your-project-ref>` を実際のSupabaseプロジェクトIDに置き換えてから、Supabase SQL Editorで実行：
+
+```sql
+select
+  cron.schedule(
+    'kabutrigger-hourly',
+    '0 * * * *',  -- 毎時0分に実行
+    $$
+    select net.http_post(
+      url:='https://<your-project-ref>.supabase.co/functions/v1/fetch-feeds',
+      headers:='{"Authorization":"Bearer ' || current_setting('app.settings.service_role_key', true) || '"}'
+    )
+    $$
+  );
+```
+
+**プロジェクトIDの確認方法**: Supabase Dashboard > Settings > API > Project URL
+- 例: `https://abcd1234.supabase.co` → プロジェクトIDは `abcd1234`
+
+### 4. ジョブの確認
+
+```sql
+-- 登録されたジョブを確認
+select * from cron.job;
+
+-- ジョブの削除（必要に応じて）
+-- select cron.unschedule('kabutrigger-hourly');
+```
+
+### 手動実行
+
+開発中は以下のコマンドで手動実行も可能：
+
+```bash
+npm run fetch-rss
+```
 
 ## 🎨 ブランド設計
 
