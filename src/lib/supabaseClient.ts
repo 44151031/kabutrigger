@@ -17,11 +17,33 @@ export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+// Supabaseから取得したデータをNewsItem型にマッピング
+function mapNewsItem(data: any): NewsItem {
+  return {
+    id: data.id,
+    title: data.title,
+    slug: data.slug,
+    link: data.link,
+    source: data.source,
+    pubDate: data.pubdate || data.pubDate, // pubdate → pubDate にマッピング
+    tags: data.tags || [],
+    created_at: data.created_at,
+  };
+}
+
 // News関連の関数
 export async function insertNews(news: NewsItem) {
+  // PostgreSQLのカラム名（pubdate）に合わせてマッピング
   const { data, error } = await supabaseAdmin
     .from("news")
-    .insert(news)
+    .insert({
+      title: news.title,
+      slug: news.slug,
+      link: news.link,
+      source: news.source,
+      pubdate: news.pubDate, // pubDate → pubdate にマッピング
+      tags: news.tags,
+    })
     .select()
     .single();
 
@@ -31,7 +53,7 @@ export async function insertNews(news: NewsItem) {
     throw error;
   }
 
-  return data;
+  return data ? mapNewsItem(data) : null;
 }
 
 export async function getNewsBySlug(slug: string): Promise<NewsItem | null> {
@@ -46,14 +68,14 @@ export async function getNewsBySlug(slug: string): Promise<NewsItem | null> {
     return null;
   }
 
-  return data;
+  return data ? mapNewsItem(data) : null;
 }
 
 export async function getAllNews(limit = 50, offset = 0): Promise<NewsItem[]> {
   const { data, error } = await supabaseAdmin
     .from("news")
     .select("*")
-    .order("pubDate", { ascending: false })
+    .order("pubdate", { ascending: false })
     .range(offset, offset + limit - 1);
 
   if (error) {
@@ -61,7 +83,7 @@ export async function getAllNews(limit = 50, offset = 0): Promise<NewsItem[]> {
     return [];
   }
 
-  return data || [];
+  return (data || []).map(mapNewsItem);
 }
 
 export async function getNewsByTag(tag: string, limit = 50): Promise<NewsItem[]> {
@@ -69,7 +91,7 @@ export async function getNewsByTag(tag: string, limit = 50): Promise<NewsItem[]>
     .from("news")
     .select("*")
     .contains("tags", [tag])
-    .order("pubDate", { ascending: false })
+    .order("pubdate", { ascending: false })
     .limit(limit);
 
   if (error) {
@@ -77,7 +99,7 @@ export async function getNewsByTag(tag: string, limit = 50): Promise<NewsItem[]>
     return [];
   }
 
-  return data || [];
+  return (data || []).map(mapNewsItem);
 }
 
 export async function getAllKeywords(): Promise<Keyword[]> {

@@ -8,14 +8,14 @@ CREATE TABLE IF NOT EXISTS news (
   slug TEXT NOT NULL UNIQUE,
   link TEXT NOT NULL,
   source TEXT NOT NULL CHECK (source IN ('Kabutan', 'GoogleNews')),
-  pubDate TEXT NOT NULL,
+  pubdate TEXT NOT NULL,
   tags TEXT[] DEFAULT '{}',
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- インデックス作成
 CREATE INDEX IF NOT EXISTS idx_news_slug ON news(slug);
-CREATE INDEX IF NOT EXISTS idx_news_pubdate ON news(pubDate DESC);
+CREATE INDEX IF NOT EXISTS idx_news_pubdate ON news(pubdate DESC);
 CREATE INDEX IF NOT EXISTS idx_news_tags ON news USING GIN(tags);
 CREATE INDEX IF NOT EXISTS idx_news_created_at ON news(created_at DESC);
 
