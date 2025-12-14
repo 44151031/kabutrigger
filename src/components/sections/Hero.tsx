@@ -7,7 +7,7 @@ export default function Hero() {
             ⚡ Kabutrigger
           </h1>
           <p className="mb-8 text-xl text-blue-100">
-            株式市場の"動き出す瞬間"をトリガーで掴め。
+            株式市場の「動き出す瞬間」をトリガーで掴め。
           </p>
           <p className="text-lg text-blue-200">
             上場来高値、TOB、決算など、株価変動を引き起こすトリガー情報を速報でお届け。

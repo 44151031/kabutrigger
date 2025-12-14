@@ -50,7 +50,7 @@ export function generateWebsiteStructuredData() {
     "@type": "WebSite",
     name: "Kabutrigger",
     url: SITE_URL,
-    description: "株式市場の"動き出す瞬間"をトリガーで掴め。",
+    description: "株式市場の「動き出す瞬間」をトリガーで掴め。",
   };
 }
 

@@ -3,7 +3,7 @@ import type { NewsItem } from "@/types/news";
 
 const SITE_NAME = "Kabutrigger";
 const SITE_DESCRIPTION =
-  "株式市場の"動き出す瞬間"をトリガーで掴め。上場来高値、TOB、決算など、株価変動を引き起こすトリガー情報を速報でお届け。";
+  "株式市場の「動き出す瞬間」をトリガーで掴め。上場来高値、TOB、決算など、株価変動を引き起こすトリガー情報を速報でお届け。";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://kabutrigger.jp";
 
 export const defaultMetadata: Metadata = {
