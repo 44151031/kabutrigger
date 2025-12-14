@@ -3,14 +3,8 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
-  webpack: (config) => {
-    // Supabase Edge Functions (Deno) をビルドから除外
-    config.watchOptions = {
-      ...config.watchOptions,
-      ignored: ["**/supabase/**"],
-    };
-    return config;
-  },
+  // Turbopack設定（空の設定でTurbopackを明示的に有効化）
+  turbopack: {},
 };
 
 export default nextConfig;
